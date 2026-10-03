@@ -1,0 +1,6 @@
+{
+  "name": "Dentic - Dental Clinic & Healthcare",
+  "description": "Pixel-faithful reconstruction of the Dentic Dental Clinic template with high-fidelity visual design, typography, and responsive layout.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
