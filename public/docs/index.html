@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="pt">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Documentação Técnica — Download dos Ficheiros</title>
+    <style>
+      :root {
+        --primary: #0066ff;
+        --primary-dark: #0052cc;
+        --dark: #0f172a;
+        --body: #64748b;
+        --bg: #f8fafc;
+        --border: #e2e8f0;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        background: var(--bg);
+        color: var(--dark);
+        padding: 40px 20px;
+      }
+      .container {
+        max-width: 780px;
+        margin: 0 auto;
+      }
+      .header {
+        margin-bottom: 28px;
+      }
+      .eyebrow {
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        color: var(--primary);
+        margin-bottom: 8px;
+      }
+      h1 {
+        margin: 0 0 8px;
+        font-size: 28px;
+        letter-spacing: -0.02em;
+      }
+      p {
+        margin: 0;
+        color: var(--body);
+        line-height: 1.6;
+        font-size: 15px;
+      }
+      .grid {
+        display: grid;
+        gap: 14px;
+      }
+      .card {
+        background: #ffffff;
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        padding: 20px 22px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        box-shadow: 0 4px 18px rgba(15, 23, 42, 0.04);
+      }
+      .card h2 {
+        margin: 0 0 4px;
+        font-size: 16px;
+      }
+      .card span {
+        font-size: 13px;
+        color: var(--body);
+        display: block;
+      }
+      .actions {
+        display: flex;
+        gap: 8px;
+        flex-shrink: 0;
+      }
+      button,
+      a.btn {
+        font-family: inherit;
+        font-size: 13px;
+        font-weight: 600;
+        padding: 10px 16px;
+        border-radius: 9999px;
+        text-decoration: none;
+        cursor: pointer;
+        border: 1px solid transparent;
+        transition: all 0.15s ease;
+      }
+      .btn-primary {
+        background: var(--primary);
+        color: #ffffff;
+      }
+      .btn-primary:hover {
+        background: var(--primary-dark);
+      }
+      .btn-outline {
+        background: #ffffff;
+        color: var(--dark);
+        border-color: var(--border);
+      }
+      .btn-outline:hover {
+        border-color: var(--primary);
+        color: var(--primary);
+      }
+      @media (max-width: 600px) {
+        .card {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+        .actions {
+          width: 100%;
+        }
+        button,
+        a.btn {
+          flex: 1;
+          text-align: center;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <div class="eyebrow">Blueprint Reutilizável</div>
+        <h1>Documentos Técnicos para Download</h1>
+        <p>
+          Estrutura, Wireframe, Design System e Tecnologias extraídos em ficheiros Markdown individuais.
+        </p>
+      </div>
+
+      <div class="grid">
+        <div class="card">
+          <div>
+            <h2>01. Estrutura do Projeto</h2>
+            <span>Árvore de pastas, fluxo em App.tsx e responsabilidades dos módulos.</span>
+          </div>
+          <div class="actions">
+            <a class="btn btn-outline" href="./01-estrutura-projeto.md" target="_blank">Abrir</a>
+            <button class="btn btn-primary" onclick="downloadDoc('01-estrutura-projeto.md')">Baixar .md</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div>
+            <h2>02. Wireframe &amp; Secções</h2>
+            <span>Diagramas ASCII para Mobile, Tablet, Desktop e guia para outros nichos.</span>
+          </div>
+          <div class="actions">
+            <a class="btn btn-outline" href="./02-wireframe-seccoes.md" target="_blank">Abrir</a>
+            <button class="btn btn-primary" onclick="downloadDoc('02-wireframe-seccoes.md')">Baixar .md</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div>
+            <h2>03. Design System</h2>
+            <span>Cores, tipografia responsiva, espaçamentos, sombras, botões e motion GSAP.</span>
+          </div>
+          <div class="actions">
+            <a class="btn btn-outline" href="./03-design-system.md" target="_blank">Abrir</a>
+            <button class="btn btn-primary" onclick="downloadDoc('03-design-system.md')">Baixar .md</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div>
+            <h2>04. Tecnologias &amp; Bibliotecas</h2>
+            <span>Stack principal, plugins GSAP, ícones, fontes, APIs web e scripts de build.</span>
+          </div>
+          <div class="actions">
+            <a class="btn btn-outline" href="./04-tecnologias-bibliotecas.md" target="_blank">Abrir</a>
+            <button class="btn btn-primary" onclick="downloadDoc('04-tecnologias-bibliotecas.md')">Baixar .md</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      async function downloadDoc(filename) {
+        try {
+          const res = await fetch('./' + filename);
+          const text = await res.text();
+          const blob = new Blob([text], { type: 'text/markdown;charset=utf-8' });
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = filename;
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+          URL.revokeObjectURL(url);
+        } catch (err) {
+          window.open('./' + filename, '_blank');
+        }
+      }
+    </script>
+  </body>
+</html>

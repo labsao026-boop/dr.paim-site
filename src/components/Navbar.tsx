@@ -1,15 +1,29 @@
-import React, { useState, useEffect } from 'react';
-import { ArrowRight, ChevronDown, Menu, X, ExternalLink } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { ArrowRight, ChevronDown, Menu, X } from 'lucide-react';
 import { DrPaimToothLogo, FacebookIcon, InstagramIcon, TikTokIcon, WhatsAppIcon } from './Icons.tsx';
 import { getWhatsAppUrl, CONTACT_INFO } from '../config/contact.ts';
+import { getNavbarOffset, scrollToSection } from '../utils/scroll.ts';
 
 interface NavbarProps {
   onOpenAppointmentModal?: () => void;
 }
 
+type SectionId = 'inicio' | 'sobre' | 'servicos' | 'depoimentos' | 'contacto';
+
+const NAV_ITEMS: { id: SectionId; label: string; href: string }[] = [
+  { id: 'inicio', label: 'Início', href: '#inicio' },
+  { id: 'sobre', label: 'Sobre', href: '#sobre' },
+  { id: 'servicos', label: 'Serviços', href: '#servicos' },
+  { id: 'depoimentos', label: 'Depoimentos', href: '#depoimentos' },
+  { id: 'contacto', label: 'Contacto', href: '#contacto' },
+];
+
 export function Navbar({ onOpenAppointmentModal }: NavbarProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [openSubmenu, setOpenSubmenu] = useState<string | null>(null);
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [activeSection, setActiveSection] = useState<SectionId>('inicio');
+  const progressBarRef = useRef<HTMLDivElement>(null);
 
   // Lock body scroll when mobile drawer is open
   useEffect(() => {
@@ -23,6 +37,84 @@ export function Navbar({ onOpenAppointmentModal }: NavbarProps) {
     };
   }, [mobileMenuOpen]);
 
+  // Sticky appearance, hairline scroll progress, and zero-layout-thrash Scroll-Spy
+  useEffect(() => {
+    const orderedIds: SectionId[] = ['contacto', 'depoimentos', 'servicos', 'sobre', 'inicio'];
+    let docHeight = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+    let cachedOffsets: { id: SectionId; top: number }[] = [];
+    let rafId: number | null = null;
+
+    const measureLayout = () => {
+      docHeight = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+      const scrollY = window.scrollY;
+      cachedOffsets = orderedIds
+        .map((id) => {
+          const el = document.getElementById(id);
+          if (!el) return null;
+          return { id, top: el.getBoundingClientRect().top + scrollY };
+        })
+        .filter((item): item is { id: SectionId; top: number } => item !== null);
+    };
+
+    const updateScrollState = () => {
+      rafId = null;
+      const scrollY = window.scrollY;
+      const scrolled = scrollY > 12;
+      setIsScrolled((prev) => (prev === scrolled ? prev : scrolled));
+
+      // Update 2px top progress hairline via GPU scaleX without re-renders
+      const progress = docHeight > 0 ? Math.min(1, Math.max(0, scrollY / docHeight)) : 0;
+      if (progressBarRef.current) {
+        progressBarRef.current.style.transform = `scaleX(${progress})`;
+      }
+
+      // Dynamic Scroll-Spy using cached offsets (zero DOM layout reads during scroll)
+      const triggerY = scrollY + getNavbarOffset() + 140;
+      let current: SectionId = 'inicio';
+
+      if (docHeight > 0 && scrollY >= docHeight - 120) {
+        current = 'contacto';
+      } else {
+        for (const item of cachedOffsets) {
+          if (item.top <= triggerY) {
+            current = item.id;
+            break;
+          }
+        }
+      }
+
+      setActiveSection((prev) => (prev === current ? prev : current));
+    };
+
+    const onScroll = () => {
+      if (rafId !== null) return;
+      rafId = requestAnimationFrame(updateScrollState);
+    };
+
+    const onResize = () => {
+      measureLayout();
+      onScroll();
+    };
+
+    measureLayout();
+    updateScrollState();
+
+    const resizeObserver = new ResizeObserver(() => {
+      measureLayout();
+    });
+    resizeObserver.observe(document.body);
+
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onResize, { passive: true });
+
+    return () => {
+      if (rafId !== null) cancelAnimationFrame(rafId);
+      resizeObserver.disconnect();
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', onResize);
+    };
+  }, []);
+
   const toggleSubmenu = (name: string) => {
     setOpenSubmenu((prev) => (prev === name ? null : name));
   };
@@ -32,11 +124,42 @@ export function Navbar({ onOpenAppointmentModal }: NavbarProps) {
     setOpenSubmenu(null);
   };
 
+  const handleAnchorClick = (
+    e: React.MouseEvent<HTMLAnchorElement>,
+    target: string,
+    shouldCloseMenu = false
+  ) => {
+    e.preventDefault();
+    if (shouldCloseMenu) {
+      closeMenu();
+    }
+    scrollToSection(target);
+  };
+
   return (
-    <header className="w-full bg-white relative z-30">
+    <>
+      <header
+        className={`w-full sticky top-0 z-40 bg-white transition-shadow duration-200 ${
+          isScrolled
+            ? 'border-b border-slate-100 shadow-[0_4px_20px_-8px_rgba(15,23,42,0.07)]'
+            : 'border-b border-transparent'
+        }`}
+      >
+      {/* Subtle 2px Electric-Blue Reading Progress Hairline */}
+      <div className="absolute top-0 left-0 right-0 h-[2px] bg-transparent pointer-events-none overflow-hidden">
+        <div
+          ref={progressBarRef}
+          className="h-full w-full bg-[#0066FF] origin-left scale-x-0 transition-transform duration-75 will-change-transform"
+        />
+      </div>
+
       <div className="max-w-[1280px] mx-auto px-4 sm:px-8 lg:px-12 h-16 sm:h-20 flex items-center justify-between">
         {/* Brand Logo Lockup */}
-        <a href="#" className="flex items-center gap-2.5 group">
+        <a
+          href="#inicio"
+          onClick={(e) => handleAnchorClick(e, '#inicio')}
+          className="flex items-center gap-2.5 group"
+        >
           <DrPaimToothLogo className="w-7 h-7 sm:w-8 sm:h-8 text-[#0066FF] transition-transform group-hover:scale-105" />
           <div className="flex flex-col">
             <span className="font-bold text-[20px] sm:text-[22px] tracking-tight text-[#0F172A] leading-none">
@@ -50,43 +173,33 @@ export function Navbar({ onOpenAppointmentModal }: NavbarProps) {
 
         {/* Desktop Navigation Links (strictly 1024px+) */}
         <nav className="hidden lg:flex items-center gap-8 lg:gap-9 text-[14px]">
-          <a
-            href="#inicio"
-            className="text-[#0066FF] font-medium relative py-1 transition-colors group"
-          >
-            Início
-            <span className="absolute bottom-0 left-0 w-full h-[2px] bg-[#0066FF] rounded-full" />
-          </a>
-          <a
-            href="#sobre"
-            className="text-[#475569] hover:text-[#0066FF] font-medium transition-colors"
-          >
-            Sobre
-          </a>
-          <a
-            href="#servicos"
-            className="text-[#475569] hover:text-[#0066FF] font-medium transition-colors"
-          >
-            Serviços
-          </a>
-          <a
-            href="#depoimentos"
-            className="text-[#475569] hover:text-[#0066FF] font-medium transition-colors"
-          >
-            Depoimentos
-          </a>
-          <a
-            href="#contacto"
-            className="text-[#475569] hover:text-[#0066FF] font-medium transition-colors"
-          >
-            Contacto
-          </a>
+          {NAV_ITEMS.map((item) => {
+            const isActive = activeSection === item.id;
+            return (
+              <a
+                key={item.id}
+                href={item.href}
+                onClick={(e) => handleAnchorClick(e, item.href)}
+                className={`relative py-1 font-medium transition-colors ${
+                  isActive ? 'text-[#0066FF]' : 'text-[#475569] hover:text-[#0066FF]'
+                }`}
+              >
+                {item.label}
+                <span
+                  className={`absolute bottom-0 left-0 w-full h-[2px] bg-[#0066FF] rounded-full transition-all duration-300 origin-center ${
+                    isActive ? 'scale-x-100 opacity-100' : 'scale-x-0 opacity-0'
+                  }`}
+                />
+              </a>
+            );
+          })}
         </nav>
 
         {/* Right CTA Outline Pill Button (Desktop strictly 1024px+) */}
         <div className="hidden lg:flex items-center gap-3">
           <a
             href="#rodape"
+            onClick={(e) => handleAnchorClick(e, '#rodape')}
             className="border-[1.5px] border-[#0066FF] text-[#0066FF] hover:bg-[#0066FF] hover:text-white rounded-full px-5 py-2 text-xs sm:text-[13px] font-medium transition-all duration-200 flex items-center gap-1.5 cursor-pointer active:scale-[0.98]"
           >
             <span>Fale Comigo</span>
@@ -98,6 +211,7 @@ export function Navbar({ onOpenAppointmentModal }: NavbarProps) {
         <div className="flex lg:hidden items-center gap-2.5">
           <a
             href="#rodape"
+            onClick={(e) => handleAnchorClick(e, '#rodape')}
             className="hidden sm:inline-flex border border-[#0066FF] text-[#0066FF] hover:bg-[#0066FF] hover:text-white transition-colors text-[12px] font-medium px-4 py-2 rounded-full items-center"
           >
             <span>Fale Comigo</span>
@@ -111,6 +225,7 @@ export function Navbar({ onOpenAppointmentModal }: NavbarProps) {
           </button>
         </div>
       </div>
+      </header>
 
       {/* Minimalist White & Blue Drawer (mobile & tablet < 1024px) */}
       <div
@@ -174,7 +289,7 @@ export function Navbar({ onOpenAppointmentModal }: NavbarProps) {
               {/* Right Pill: Crisp Minimal Outline action */}
               <a
                 href="#rodape"
-                onClick={closeMenu}
+                onClick={(e) => handleAnchorClick(e, '#rodape', true)}
                 className="border border-slate-200 hover:border-[#0066FF] text-[#0F172A] hover:text-[#0066FF] font-medium text-[12.5px] py-2.5 px-3 rounded-full text-center hover:bg-slate-50 transition-all flex items-center justify-center gap-1 active:scale-95"
               >
                 <span>Fale Comigo</span>
@@ -187,8 +302,10 @@ export function Navbar({ onOpenAppointmentModal }: NavbarProps) {
               {/* Item: Início */}
               <a
                 href="#inicio"
-                onClick={closeMenu}
-                className="flex items-center justify-between py-3.5 border-b border-slate-100 text-[15px] sm:text-[16px] font-normal text-[#1E293B] hover:text-[#0066FF] transition-colors group"
+                onClick={(e) => handleAnchorClick(e, '#inicio', true)}
+                className={`flex items-center justify-between py-3.5 border-b border-slate-100 text-[15px] sm:text-[16px] font-normal transition-colors group ${
+                  activeSection === 'inicio' ? 'text-[#0066FF] font-medium' : 'text-[#1E293B] hover:text-[#0066FF]'
+                }`}
               >
                 <span>Início</span>
                 <ArrowRight size={15} strokeWidth={1.5} className="text-slate-400 group-hover:text-[#0066FF] group-hover:translate-x-0.5 transition-all" />
@@ -198,7 +315,9 @@ export function Navbar({ onOpenAppointmentModal }: NavbarProps) {
               <div className="border-b border-slate-100">
                 <button
                   onClick={() => toggleSubmenu('about')}
-                  className="w-full flex items-center justify-between py-3.5 text-[15px] sm:text-[16px] font-normal text-[#1E293B] hover:text-[#0066FF] transition-colors cursor-pointer"
+                  className={`w-full flex items-center justify-between py-3.5 text-[15px] sm:text-[16px] font-normal transition-colors cursor-pointer ${
+                    activeSection === 'sobre' ? 'text-[#0066FF] font-medium' : 'text-[#1E293B] hover:text-[#0066FF]'
+                  }`}
                 >
                   <span>Sobre o Dr. Paim</span>
                   <ChevronDown
@@ -213,21 +332,21 @@ export function Navbar({ onOpenAppointmentModal }: NavbarProps) {
                   <div className="pb-3.5 pl-2.5 space-y-2 text-[13px] text-slate-500 font-normal animate-fade-in border-l-2 border-[#0066FF]/20 ml-1">
                     <a
                       href="#sobre"
-                      onClick={closeMenu}
+                      onClick={(e) => handleAnchorClick(e, '#sobre', true)}
                       className="block py-0.5 pl-2 hover:text-[#0066FF] transition-colors"
                     >
                       Trajetória & 15+ Anos
                     </a>
                     <a
                       href="#sobre"
-                      onClick={closeMenu}
+                      onClick={(e) => handleAnchorClick(e, '#sobre', true)}
                       className="block py-0.5 pl-2 hover:text-[#0066FF] transition-colors"
                     >
                       Tecnologia & Escaneamento
                     </a>
                     <a
                       href="#sobre"
-                      onClick={closeMenu}
+                      onClick={(e) => handleAnchorClick(e, '#sobre', true)}
                       className="block py-0.5 pl-2 hover:text-[#0066FF] transition-colors"
                     >
                       Biossegurança & Conforto
@@ -240,7 +359,9 @@ export function Navbar({ onOpenAppointmentModal }: NavbarProps) {
               <div className="border-b border-slate-100">
                 <button
                   onClick={() => toggleSubmenu('services')}
-                  className="w-full flex items-center justify-between py-3.5 text-[15px] sm:text-[16px] font-normal text-[#1E293B] hover:text-[#0066FF] transition-colors cursor-pointer"
+                  className={`w-full flex items-center justify-between py-3.5 text-[15px] sm:text-[16px] font-normal transition-colors cursor-pointer ${
+                    activeSection === 'servicos' ? 'text-[#0066FF] font-medium' : 'text-[#1E293B] hover:text-[#0066FF]'
+                  }`}
                 >
                   <span>Procedimentos</span>
                   <ChevronDown
@@ -291,7 +412,7 @@ export function Navbar({ onOpenAppointmentModal }: NavbarProps) {
                     </a>
                     <a
                       href="#servicos"
-                      onClick={closeMenu}
+                      onClick={(e) => handleAnchorClick(e, '#servicos', true)}
                       className="block pt-1 pl-2 text-xs font-medium text-[#0066FF] hover:underline"
                     >
                       Ver todos os procedimentos &rarr;
@@ -303,8 +424,10 @@ export function Navbar({ onOpenAppointmentModal }: NavbarProps) {
               {/* Item: Depoimentos & Casos Reais */}
               <a
                 href="#depoimentos"
-                onClick={closeMenu}
-                className="flex items-center justify-between py-3.5 border-b border-slate-100 text-[15px] sm:text-[16px] font-normal text-[#1E293B] hover:text-[#0066FF] transition-colors group"
+                onClick={(e) => handleAnchorClick(e, '#depoimentos', true)}
+                className={`flex items-center justify-between py-3.5 border-b border-slate-100 text-[15px] sm:text-[16px] font-normal transition-colors group ${
+                  activeSection === 'depoimentos' ? 'text-[#0066FF] font-medium' : 'text-[#1E293B] hover:text-[#0066FF]'
+                }`}
               >
                 <span>Casos & Depoimentos</span>
                 <ArrowRight size={15} strokeWidth={1.5} className="text-slate-400 group-hover:text-[#0066FF] group-hover:translate-x-0.5 transition-all" />
@@ -313,8 +436,10 @@ export function Navbar({ onOpenAppointmentModal }: NavbarProps) {
               {/* Item: Contacto & Agendamento */}
               <a
                 href="#contacto"
-                onClick={closeMenu}
-                className="flex items-center justify-between py-3.5 border-b border-slate-100 text-[15px] sm:text-[16px] font-normal text-[#1E293B] hover:text-[#0066FF] transition-colors group"
+                onClick={(e) => handleAnchorClick(e, '#contacto', true)}
+                className={`flex items-center justify-between py-3.5 border-b border-slate-100 text-[15px] sm:text-[16px] font-normal transition-colors group ${
+                  activeSection === 'contacto' ? 'text-[#0066FF] font-medium' : 'text-[#1E293B] hover:text-[#0066FF]'
+                }`}
               >
                 <span>Contacto & Localização</span>
                 <ArrowRight size={15} strokeWidth={1.5} className="text-slate-400 group-hover:text-[#0066FF] group-hover:translate-x-0.5 transition-all" />
@@ -371,7 +496,7 @@ export function Navbar({ onOpenAppointmentModal }: NavbarProps) {
           </div>
         </div>
       </div>
-    </header>
+    </>
   );
 }
 

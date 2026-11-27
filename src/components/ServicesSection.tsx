@@ -4,8 +4,7 @@ import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { ToothMinimalIcon, WhatsAppIcon } from './Icons.tsx';
 import { getWhatsAppUrl } from '../config/contact.ts';
-
-gsap.registerPlugin(ScrollTrigger);
+import '../utils/scroll.ts';
 
 interface ServicesSectionProps {
   onOpenAppointmentModal?: () => void;
@@ -72,30 +71,74 @@ export function ServicesSection({ onOpenAppointmentModal }: ServicesSectionProps
   const trackRef = useRef<HTMLDivElement>(null);
   const [isPaused, setIsPaused] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const [isInView, setIsInView] = useState(false);
   const [startX, setStartX] = useState(0);
   const [scrollLeft, setScrollLeft] = useState(0);
   const animationFrameRef = useRef<number | null>(null);
+  const lastFrameTimeRef = useRef<number | null>(null);
+  const subpixelCarryRef = useRef<number>(0);
+  const singleSetWidthRef = useRef<number>(0);
 
-  // Initialize track position to the middle set on mount
-  useEffect(() => {
-    const track = trackRef.current;
-    if (track) {
-      const singleSetWidth = track.scrollWidth / 3;
-      track.scrollLeft = singleSetWidth;
-    }
-  }, []);
-
-  // Continuous fluid motion loop (60fps requestAnimationFrame)
+  // Initialize track position and cache singleSetWidth via ResizeObserver (no rAF layout reads)
   useEffect(() => {
     const track = trackRef.current;
     if (!track) return;
 
-    const moveTrack = () => {
-      if (!isPaused && !isDragging) {
-        track.scrollLeft += 0.8; // Smooth, elegant dynamic pace
+    const updateWidth = () => {
+      const width = track.scrollWidth / 3;
+      singleSetWidthRef.current = width;
+      if (track.scrollLeft === 0 && width > 0) {
+        track.scrollLeft = width;
+      }
+    };
 
-        const singleSetWidth = track.scrollWidth / 3;
-        // Infinite wraparound in both directions
+    updateWidth();
+    const ro = new ResizeObserver(updateWidth);
+    ro.observe(track);
+    return () => ro.disconnect();
+  }, []);
+
+  // Only run continuous marquee rAF when the Services section is visible on screen
+  useEffect(() => {
+    const section = sectionRef.current;
+    if (!section) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsInView(entry.isIntersecting);
+      },
+      { rootMargin: '120px 0px' }
+    );
+    observer.observe(section);
+    return () => observer.disconnect();
+  }, []);
+
+  // Continuous fluid motion loop (only active when visible, not paused, and not dragging)
+  useEffect(() => {
+    const track = trackRef.current;
+    if (!track || !isInView || isPaused || isDragging) {
+      lastFrameTimeRef.current = null;
+      return;
+    }
+
+    const speedPxPerSec = 70;
+
+    const moveTrack = (timestamp: number) => {
+      if (lastFrameTimeRef.current === null) {
+        lastFrameTimeRef.current = timestamp;
+      }
+      const dt = Math.min((timestamp - lastFrameTimeRef.current) / 1000, 0.05);
+      lastFrameTimeRef.current = timestamp;
+
+      subpixelCarryRef.current += speedPxPerSec * dt;
+      const step = Math.floor(subpixelCarryRef.current);
+      if (step >= 1) {
+        subpixelCarryRef.current -= step;
+        track.scrollLeft += step;
+      }
+
+      const singleSetWidth = singleSetWidthRef.current;
+      if (singleSetWidth > 0) {
         if (track.scrollLeft >= singleSetWidth * 2) {
           track.scrollLeft -= singleSetWidth;
         } else if (track.scrollLeft <= 0) {
@@ -108,11 +151,12 @@ export function ServicesSection({ onOpenAppointmentModal }: ServicesSectionProps
     animationFrameRef.current = requestAnimationFrame(moveTrack);
 
     return () => {
+      lastFrameTimeRef.current = null;
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
       }
     };
-  }, [isPaused, isDragging]);
+  }, [isInView, isPaused, isDragging]);
 
   // Drag interaction handlers (mouse & touch)
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -188,10 +232,6 @@ export function ServicesSection({ onOpenAppointmentModal }: ServicesSectionProps
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (prefersReducedMotion) return;
 
-    const timer = setTimeout(() => {
-      ScrollTrigger.refresh();
-    }, 200);
-
     const ctx = gsap.context(() => {
       if (headerRef.current) {
         gsap.fromTo(
@@ -200,14 +240,16 @@ export function ServicesSection({ onOpenAppointmentModal }: ServicesSectionProps
           {
             opacity: 1,
             y: 0,
-            duration: 0.85,
-            ease: 'power2.inOut',
+            duration: 0.55,
+            ease: 'power3.out',
+            force3D: true,
             scrollTrigger: {
               trigger: headerRef.current,
-              start: 'top 92%',
+              start: 'top 88%',
               once: true,
+              fastScrollEnd: true,
             },
-            clearProps: 'all',
+            clearProps: 'transform,opacity',
           }
         );
       }
@@ -215,25 +257,27 @@ export function ServicesSection({ onOpenAppointmentModal }: ServicesSectionProps
       if (carouselWrapperRef.current) {
         gsap.fromTo(
           carouselWrapperRef.current,
-          { opacity: 0, y: 20 },
+          { opacity: 0, y: 18 },
           {
             opacity: 1,
             y: 0,
-            duration: 0.95,
-            ease: 'power2.inOut',
+            duration: 0.6,
+            delay: 0.06,
+            ease: 'power3.out',
+            force3D: true,
             scrollTrigger: {
               trigger: carouselWrapperRef.current,
-              start: 'top 92%',
+              start: 'top 88%',
               once: true,
+              fastScrollEnd: true,
             },
-            clearProps: 'all',
+            clearProps: 'transform,opacity',
           }
         );
       }
     }, sectionRef);
 
     return () => {
-      clearTimeout(timer);
       ctx.revert();
     };
   }, []);

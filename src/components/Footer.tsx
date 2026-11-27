@@ -1,15 +1,59 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { ArrowRight, Phone, MapPin, Clock, ExternalLink } from 'lucide-react';
+import gsap from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { DrPaimToothLogo, FacebookIcon, InstagramIcon, TikTokIcon, WhatsAppIcon } from './Icons.tsx';
 import { CONTACT_INFO, getWhatsAppUrl } from '../config/contact.ts';
+import { scrollToSection } from '../utils/scroll.ts';
 
 export function Footer() {
+  const footerRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (prefersReducedMotion) return;
+
+    const ctx = gsap.context(() => {
+      const cols = footerRef.current?.querySelectorAll('.footer-anim-col');
+      if (cols && cols.length > 0) {
+        gsap.fromTo(
+          cols,
+          { opacity: 0, y: 16 },
+          {
+            opacity: 1,
+            y: 0,
+            duration: 0.54,
+            stagger: 0.055,
+            ease: 'power3.out',
+            force3D: true,
+            scrollTrigger: {
+              trigger: footerRef.current,
+              start: 'top 90%',
+              once: true,
+              fastScrollEnd: true,
+            },
+            clearProps: 'transform,opacity',
+          }
+        );
+      }
+    }, footerRef);
+
+    return () => {
+      ctx.revert();
+    };
+  }, []);
+
+  const handleAnchorClick = (e: React.MouseEvent<HTMLAnchorElement>, target: string) => {
+    e.preventDefault();
+    scrollToSection(target);
+  };
+
   return (
-    <footer id="rodape" className="w-full bg-[#0B132B] text-white pt-16 pb-12 border-t border-slate-800 scroll-mt-10">
+    <footer ref={footerRef} id="rodape" className="w-full bg-[#0B132B] text-white pt-16 pb-12 border-t border-slate-800 scroll-mt-20">
       <div className="max-w-[1280px] mx-auto px-4 sm:px-8 lg:px-12">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-10 lg:gap-12 pb-14 border-b border-slate-800/80">
           {/* Column 1: Brand & Professional Profile (5 cols on desktop, 1 on tablet) */}
-          <div className="lg:col-span-5 flex flex-col items-start">
+          <div className="footer-anim-col lg:col-span-5 flex flex-col items-start">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 rounded-2xl bg-[#0066FF] flex items-center justify-center text-white shadow-md shadow-[#0066FF]/30">
                 <DrPaimToothLogo className="w-6 h-6 text-white" />
@@ -41,33 +85,53 @@ export function Footer() {
           </div>
 
           {/* Column 2: Navigation Links (3 cols on desktop, 1 on tablet) */}
-          <div className="lg:col-span-3 flex flex-col">
+          <div className="footer-anim-col lg:col-span-3 flex flex-col">
             <h4 className="text-xs font-semibold text-slate-400 tracking-[0.2em] uppercase mb-4">
               Navegação
             </h4>
             <ul className="space-y-2.5 text-sm text-slate-300">
               <li>
-                <a href="#inicio" className="hover:text-[#60A5FA] transition-colors py-0.5 inline-block">
+                <a
+                  href="#inicio"
+                  onClick={(e) => handleAnchorClick(e, '#inicio')}
+                  className="hover:text-[#60A5FA] transition-colors py-0.5 inline-block"
+                >
                   Início
                 </a>
               </li>
               <li>
-                <a href="#sobre" className="hover:text-[#60A5FA] transition-colors py-0.5 inline-block">
+                <a
+                  href="#sobre"
+                  onClick={(e) => handleAnchorClick(e, '#sobre')}
+                  className="hover:text-[#60A5FA] transition-colors py-0.5 inline-block"
+                >
                   Sobre o Dr. Paim
                 </a>
               </li>
               <li>
-                <a href="#servicos" className="hover:text-[#60A5FA] transition-colors py-0.5 inline-block">
+                <a
+                  href="#servicos"
+                  onClick={(e) => handleAnchorClick(e, '#servicos')}
+                  className="hover:text-[#60A5FA] transition-colors py-0.5 inline-block"
+                >
                   Especialidades & Tratamentos
                 </a>
               </li>
               <li>
-                <a href="#depoimentos" className="hover:text-[#60A5FA] transition-colors py-0.5 inline-block">
+                <a
+                  href="#depoimentos"
+                  onClick={(e) => handleAnchorClick(e, '#depoimentos')}
+                  className="hover:text-[#60A5FA] transition-colors py-0.5 inline-block"
+                >
                   Casos Clínicos & Depoimentos
                 </a>
               </li>
               <li>
-                <a href="#contacto" className="hover:text-[#60A5FA] transition-colors py-0.5 inline-block">
+                <a
+                  href="#contacto"
+                  onClick={(e) => handleAnchorClick(e, '#contacto')}
+                  className="hover:text-[#60A5FA] transition-colors py-0.5 inline-block"
+                >
                   Agendamento & Localização
                 </a>
               </li>
@@ -75,7 +139,7 @@ export function Footer() {
           </div>
 
           {/* Column 3: Redes Sociais Oficiais (4 cols on desktop, full span on tablet) */}
-          <div className="md:col-span-2 lg:col-span-4 flex flex-col">
+          <div className="footer-anim-col md:col-span-2 lg:col-span-4 flex flex-col">
             <h4 className="text-xs font-semibold text-slate-400 tracking-[0.2em] uppercase mb-4">
               Redes Sociais Oficiais
             </h4>

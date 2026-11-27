@@ -4,8 +4,7 @@ import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { BlueCircleCheckIcon, WhatsAppIcon } from './Icons.tsx';
 import { getWhatsAppUrl } from '../config/contact.ts';
-
-gsap.registerPlugin(ScrollTrigger);
+import '../utils/scroll.ts';
 
 interface AboutPaimProps {
   onOpenAppointmentModal?: () => void;
@@ -20,27 +19,25 @@ export function AboutPaim({ onOpenAppointmentModal }: AboutPaimProps) {
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (prefersReducedMotion) return;
 
-    const timer = setTimeout(() => {
-      ScrollTrigger.refresh();
-    }, 200);
-
     const ctx = gsap.context(() => {
       // Doctor portrait card fade-up
       if (cardRef.current) {
         gsap.fromTo(
           cardRef.current,
-          { opacity: 0, y: 20 },
+          { opacity: 0, y: 18 },
           {
             opacity: 1,
             y: 0,
-            duration: 0.9,
-            ease: 'power2.inOut',
+            duration: 0.58,
+            ease: 'power3.out',
+            force3D: true,
             scrollTrigger: {
               trigger: cardRef.current,
-              start: 'top 92%',
+              start: 'top 88%',
               once: true,
+              fastScrollEnd: true,
             },
-            clearProps: 'all',
+            clearProps: 'transform,opacity',
           }
         );
       }
@@ -53,22 +50,23 @@ export function AboutPaim({ onOpenAppointmentModal }: AboutPaimProps) {
           {
             opacity: 1,
             y: 0,
-            duration: 0.85,
-            stagger: 0.09,
-            ease: 'power2.inOut',
+            duration: 0.52,
+            stagger: 0.045,
+            ease: 'power3.out',
+            force3D: true,
             scrollTrigger: {
               trigger: bioRef.current,
-              start: 'top 92%',
+              start: 'top 88%',
               once: true,
+              fastScrollEnd: true,
             },
-            clearProps: 'all',
+            clearProps: 'transform,opacity',
           }
         );
       }
     }, containerRef);
 
     return () => {
-      clearTimeout(timer);
       ctx.revert();
     };
   }, []);
@@ -86,8 +84,8 @@ export function AboutPaim({ onOpenAppointmentModal }: AboutPaimProps) {
         <div className="grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-10 lg:gap-16 items-center">
           {/* Left Column: Doctor Portrait Card Filled with Provided Image */}
           <div ref={cardRef} className="md:col-span-5 relative flex items-center justify-center">
-            {/* Ambient Soft Glow Behind Card */}
-            <div className="absolute -inset-4 bg-gradient-to-tr from-[#0066FF]/10 via-[#0066FF]/5 to-transparent rounded-[40px] blur-xl -z-10" />
+            {/* Ambient Soft Glow Behind Card (zero-cost radial gradient) */}
+            <div className="absolute -inset-6 bg-[radial-gradient(circle_at_center,rgba(0,102,255,0.12)_0%,rgba(0,102,255,0.03)_55%,transparent_75%)] rounded-[40px] -z-10 pointer-events-none" />
 
             {/* Perfect Image Card */}
             <div className="relative w-full max-w-[310px] sm:max-w-[360px] md:max-w-[380px] lg:max-w-[430px] aspect-[4/5] rounded-[28px] sm:rounded-[36px] overflow-hidden border border-slate-100 shadow-[0_20px_50px_-15px_rgba(0,102,255,0.12)] group">
@@ -95,11 +93,13 @@ export function AboutPaim({ onOpenAppointmentModal }: AboutPaimProps) {
                 src="https://res.cloudinary.com/r8des9mz/image/upload/v1790970852/Retrato_profissional_de_m%C3%A9dico_sorridente.png"
                 alt="Dr. Paim - Retrato profissional"
                 referrerPolicy="no-referrer"
+                decoding="async"
+                loading="lazy"
                 className="w-full h-full object-cover object-top transition-transform duration-700 ease-out group-hover:scale-105 select-none"
               />
 
               {/* Bottom Subtle Overlay Card */}
-              <div className="absolute bottom-3.5 sm:bottom-5 left-3.5 sm:left-5 right-3.5 sm:right-5 bg-white/95 backdrop-blur-md p-3 sm:p-4 rounded-2xl border border-white/60 shadow-lg flex items-center justify-between z-10 transition-transform duration-300 group-hover:translate-y-[-2px]">
+              <div className="absolute bottom-3.5 sm:bottom-5 left-3.5 sm:left-5 right-3.5 sm:right-5 bg-white/95 p-3 sm:p-4 rounded-2xl border border-white/80 shadow-lg flex items-center justify-between z-10 transition-transform duration-300 group-hover:translate-y-[-2px]">
                 <div className="flex flex-col">
                   <span className="text-[13px] sm:text-[15px] font-bold text-[#0F172A] leading-tight">
                     Dr. Paim

@@ -4,8 +4,7 @@ import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { WhatsAppIcon } from './Icons.tsx';
 import { CONTACT_INFO, getWhatsAppUrl } from '../config/contact.ts';
-
-gsap.registerPlugin(ScrollTrigger);
+import '../utils/scroll.ts';
 
 interface TestimonialsPaimProps {
   onOpenAppointmentModal?: () => void;
@@ -41,11 +40,6 @@ export function TestimonialsPaim({ onOpenAppointmentModal }: TestimonialsPaimPro
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (prefersReducedMotion) return;
 
-    // Refresh ScrollTrigger after layout settles to guarantee accurate positions
-    const timer = setTimeout(() => {
-      ScrollTrigger.refresh();
-    }, 200);
-
     const ctx = gsap.context(() => {
       if (headerRef.current) {
         gsap.fromTo(
@@ -54,14 +48,16 @@ export function TestimonialsPaim({ onOpenAppointmentModal }: TestimonialsPaimPro
           {
             opacity: 1,
             y: 0,
-            duration: 0.85,
-            ease: 'power2.inOut',
+            duration: 0.52,
+            ease: 'power3.out',
+            force3D: true,
             scrollTrigger: {
               trigger: headerRef.current,
-              start: 'top 92%',
+              start: 'top 88%',
               once: true,
+              fastScrollEnd: true,
             },
-            clearProps: 'all',
+            clearProps: 'transform,opacity',
           }
         );
       }
@@ -69,18 +65,20 @@ export function TestimonialsPaim({ onOpenAppointmentModal }: TestimonialsPaimPro
       if (galleryCardRef.current) {
         gsap.fromTo(
           galleryCardRef.current,
-          { opacity: 0, y: 20 },
+          { opacity: 0, y: 18 },
           {
             opacity: 1,
             y: 0,
-            duration: 0.95,
-            ease: 'power2.inOut',
+            duration: 0.58,
+            ease: 'power3.out',
+            force3D: true,
             scrollTrigger: {
               trigger: galleryCardRef.current,
-              start: 'top 92%',
+              start: 'top 88%',
               once: true,
+              fastScrollEnd: true,
             },
-            clearProps: 'all',
+            clearProps: 'transform,opacity',
           }
         );
       }
@@ -89,19 +87,21 @@ export function TestimonialsPaim({ onOpenAppointmentModal }: TestimonialsPaimPro
       if (cards && cards.length > 0) {
         gsap.fromTo(
           cards,
-          { opacity: 0, y: 18 },
+          { opacity: 0, y: 16 },
           {
             opacity: 1,
             y: 0,
-            duration: 0.85,
-            stagger: 0.14,
-            ease: 'power2.inOut',
+            duration: 0.52,
+            stagger: 0.055,
+            ease: 'power3.out',
+            force3D: true,
             scrollTrigger: {
               trigger: testimonialsListRef.current || sectionRef.current,
-              start: 'top 94%',
+              start: 'top 88%',
               once: true,
+              fastScrollEnd: true,
             },
-            clearProps: 'all',
+            clearProps: 'transform,opacity',
           }
         );
       }
@@ -109,25 +109,26 @@ export function TestimonialsPaim({ onOpenAppointmentModal }: TestimonialsPaimPro
       if (contactBannerRef.current) {
         gsap.fromTo(
           contactBannerRef.current,
-          { opacity: 0, y: 22 },
+          { opacity: 0, y: 18 },
           {
             opacity: 1,
             y: 0,
-            duration: 0.9,
-            ease: 'power2.inOut',
+            duration: 0.58,
+            ease: 'power3.out',
+            force3D: true,
             scrollTrigger: {
               trigger: contactBannerRef.current,
-              start: 'top 92%',
+              start: 'top 88%',
               once: true,
+              fastScrollEnd: true,
             },
-            clearProps: 'all',
+            clearProps: 'transform,opacity',
           }
         );
       }
     }, sectionRef);
 
     return () => {
-      clearTimeout(timer);
       ctx.revert();
     };
   }, []);
@@ -179,8 +180,8 @@ export function TestimonialsPaim({ onOpenAppointmentModal }: TestimonialsPaimPro
         <div className="grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-10 lg:gap-14 items-center mb-12 sm:mb-20">
           {/* Left Column: Crossfade Image Card with Patient Cases */}
           <div ref={galleryCardRef} className="md:col-span-5 relative flex items-center justify-center">
-            {/* Ambient Soft Glow Behind Card */}
-            <div className="absolute -inset-4 bg-gradient-to-tr from-[#0066FF]/10 via-[#0066FF]/5 to-transparent rounded-[40px] blur-xl -z-10" />
+            {/* Ambient Soft Glow Behind Card (zero-cost radial gradient) */}
+            <div className="absolute -inset-6 bg-[radial-gradient(circle_at_center,rgba(0,102,255,0.12)_0%,rgba(0,102,255,0.03)_55%,transparent_75%)] rounded-[40px] -z-10 pointer-events-none" />
 
             {/* Perfect Image Card with Crossfade Dissolve Transition */}
             <div className="relative w-full max-w-[310px] sm:max-w-[360px] md:max-w-[380px] lg:max-w-[430px] aspect-[4/5] rounded-[28px] sm:rounded-[36px] overflow-hidden border border-slate-100 shadow-[0_20px_50px_-15px_rgba(0,102,255,0.12)] group bg-slate-900">
@@ -197,6 +198,8 @@ export function TestimonialsPaim({ onOpenAppointmentModal }: TestimonialsPaimPro
                       src={src}
                       alt={`Dr. Paim - Caso Clínico e Paciente ${idx + 1}`}
                       referrerPolicy="no-referrer"
+                      decoding="async"
+                      loading="lazy"
                       className={`w-full h-full object-cover object-center select-none transition-transform duration-5000 ease-out ${
                         isActive ? 'scale-105' : 'scale-100'
                       }`}
@@ -220,7 +223,7 @@ export function TestimonialsPaim({ onOpenAppointmentModal }: TestimonialsPaimPro
               </div>
 
               {/* Bottom Subtle Overlay Badge */}
-              <div className="absolute bottom-3.5 sm:bottom-5 left-3.5 sm:left-5 right-3.5 sm:right-5 bg-white/95 backdrop-blur-md p-3 sm:p-4 rounded-2xl border border-white/60 shadow-lg flex items-center justify-between z-20 transition-transform duration-300 group-hover:translate-y-[-2px]">
+              <div className="absolute bottom-3.5 sm:bottom-5 left-3.5 sm:left-5 right-3.5 sm:right-5 bg-white/95 p-3 sm:p-4 rounded-2xl border border-white/80 shadow-lg flex items-center justify-between z-20 transition-transform duration-300 group-hover:translate-y-[-2px]">
                 <div className="flex flex-col">
                   <span className="text-[13px] sm:text-[15px] font-bold text-[#0F172A] leading-tight">
                     Casos Reais &bull; Dr. Paim
@@ -283,9 +286,9 @@ export function TestimonialsPaim({ onOpenAppointmentModal }: TestimonialsPaimPro
 
         {/* Contact & Consultation Banner */}
         <div ref={contactBannerRef} id="contacto" className="bg-[#0066FF] rounded-[28px] sm:rounded-[36px] p-6 sm:p-10 lg:p-16 text-white shadow-xl shadow-[#0066FF]/20 relative overflow-hidden">
-          {/* Subtle Background Glow Elements */}
-          <div className="absolute -right-20 -bottom-20 w-80 h-80 rounded-full bg-white/10 blur-2xl pointer-events-none" />
-          <div className="absolute -left-20 -top-20 w-80 h-80 rounded-full bg-white/10 blur-2xl pointer-events-none" />
+          {/* Subtle Background Glow Elements (zero-cost radial gradients) */}
+          <div className="absolute -right-24 -bottom-24 w-96 h-96 rounded-full bg-[radial-gradient(circle,rgba(255,255,255,0.16)_0%,transparent_70%)] pointer-events-none" />
+          <div className="absolute -left-24 -top-24 w-96 h-96 rounded-full bg-[radial-gradient(circle,rgba(255,255,255,0.14)_0%,transparent_70%)] pointer-events-none" />
 
           <div className="relative z-10 grid grid-cols-1 md:grid-cols-12 gap-8 items-center">
             <div className="md:col-span-8">

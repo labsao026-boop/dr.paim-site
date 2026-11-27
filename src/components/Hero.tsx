@@ -19,25 +19,36 @@ export function Hero({ onOpenAppointmentModal }: HeroProps) {
 
     const ctx = gsap.context(() => {
       // Content items staggered entrance
-      gsap.from('.hero-anim-item', {
-        opacity: 0,
-        y: 20,
-        duration: 0.9,
-        stagger: 0.1,
-        ease: 'power2.inOut',
-        clearProps: 'transform',
-      });
+      gsap.fromTo(
+        '.hero-anim-item',
+        { opacity: 0, y: 18 },
+        {
+          opacity: 1,
+          y: 0,
+          duration: 0.56,
+          stagger: 0.05,
+          ease: 'power3.out',
+          force3D: true,
+          clearProps: 'transform,opacity',
+        }
+      );
 
-      // Doctor background image elegant scale & fade entrance
+      // Doctor background image crisp entrance with subtle scale
       if (doctorImgRef.current) {
-        gsap.from(doctorImgRef.current, {
-          opacity: 0,
-          scale: 0.98,
-          duration: 1.15,
-          ease: 'power2.inOut',
-          delay: 0.1,
-          clearProps: 'transform',
-        });
+        gsap.fromTo(
+          doctorImgRef.current,
+          { opacity: 0, scale: 0.97, y: 10 },
+          {
+            opacity: 1,
+            scale: 1,
+            y: 0,
+            duration: 0.72,
+            ease: 'power3.out',
+            delay: 0.06,
+            force3D: true,
+            clearProps: 'transform,opacity',
+          }
+        );
       }
     }, containerRef);
 
@@ -55,6 +66,7 @@ export function Hero({ onOpenAppointmentModal }: HeroProps) {
           src="https://res.cloudinary.com/r8des9mz/image/upload/v1790963047/M%C3%A9dico_sorridente_com_bra%C3%A7os_cruzados_1.png"
           alt="Dr. Paim - Médico sorridente com braços cruzados"
           referrerPolicy="no-referrer"
+          decoding="async"
           className="h-[88%] lg:h-full w-auto max-w-none object-contain object-bottom select-none drop-shadow-sm"
         />
       </div>
